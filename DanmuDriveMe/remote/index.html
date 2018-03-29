@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>DanmuDriveMe</title>
+		<script type="text/javascript" src="mind-framework.js"></script>
+		<script type="text/javascript">
+			mind.init({callback: function(robot){
+				skillID="DanmuDriveMe";
+				robot.connectSkill({
+					skillID: skillID,
+					callback: robot.onRecvSkillData(function(skillID, data) {
+						document.getElementById('feedback').innerHTML = data;
+					})
+				});
+				document.getElementById("connect").onclick = function() {
+					robot.sendData({
+						skillID: skillID, 
+						data: "connect:" + document.getElementById('roomid').value.trim()
+					})
+				}
+				document.getElementById("finish").onclick = function() {
+					robot.sendData({
+						skillID: skillID, 
+						data: "finish"
+					})
+				}
+			}});
+		</script>
+	</head>
+	<body>
+		<label>房间号</label>
+		<input id="roomid" type="text" name="fname" /><br>
+		<button id="connect">连接</button>
+		<button id="finish">断开</button>
+		<label id="feedback"></label>
+	</body>
+</html>
