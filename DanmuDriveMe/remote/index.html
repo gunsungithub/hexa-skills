@@ -14,24 +14,43 @@
 				});
 				document.getElementById("connect").onclick = function() {
 					robot.sendData({
-						skillID: skillID, 
+						skillID: skillID,
 						data: "connect:" + document.getElementById('roomid').value.trim()
 					})
 				}
 				document.getElementById("finish").onclick = function() {
 					robot.sendData({
-						skillID: skillID, 
+						skillID: skillID,
 						data: "finish"
+					})
+				}
+
+				document.getElementById("rtmp_send").onclick = function() {
+					robot.sendData({
+						skillID: skillID,
+						data: "rtmp_send:" + document.getElementById('rtmp_url').value.trim()
+					})
+				}
+				document.getElementById("rtmp_stop").onclick = function() {
+					robot.sendData({
+						skillID: skillID,
+						data: "rtmp_stop"
 					})
 				}
 			}});
 		</script>
 	</head>
 	<body>
+		<label><strong>弹幕测试</strong></label><br>
 		<label>房间号</label>
 		<input id="roomid" type="text" name="fname" /><br>
 		<button id="connect">连接</button>
-		<button id="finish">断开</button>
+		<button id="finish">断开</button><br><br>
+		<label><strong>推流测试</strong></label><br>
+		<label>地址</label>
+		<input id="rtmp_url" type="text" name="fname" /><br>
+		<button id="rtmp_send">推</button>
+		<button id="rtmp_stop">停</button>
 		<label id="feedback"></label>
 	</body>
 </html>

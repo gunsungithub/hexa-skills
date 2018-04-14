@@ -2,9 +2,9 @@ package DanmuDriveMe
 
 import (
 	"mind/core/framework"
-	"mind/core/framework/skill"
-	"mind/core/framework/log"
 	"mind/core/framework/drivers/hexabody"
+	"mind/core/framework/log"
+	"mind/core/framework/skill"
 	"os"
 )
 
@@ -34,7 +34,7 @@ func (d *DanmuDriveMe) OnClose() {
 
 func (d *DanmuDriveMe) OnConnect() {
 	log.Debug.Println("OnConnect")
-	
+
 }
 
 func (d *DanmuDriveMe) OnDisconnect() {
@@ -52,12 +52,17 @@ func (d *DanmuDriveMe) OnRecvJSON(data []byte) {
 func (d *DanmuDriveMe) OnRecvString(data string) {
 	log.Debug.Println("OnRecvString", data)
 	framework.SendString(data)
-	switch (data) {
-		default:
+	switch data {
+	default:
 		if len(data) > len("connect") && data[:len("connect")] == "connect" {
 			d.connect(data)
 		}
-		case "finish":
-			working = false
+		if len(data) > len("rtmp_send") && data[:len("rtmp_send")] == "rtmp_send" {
+			rtmp_send(data[len("rtmp_send")+1:])
+		}
+	case "finish":
+		working = false
+	case "rtmp_stop":
+		rtmp_working = false
 	}
 }
