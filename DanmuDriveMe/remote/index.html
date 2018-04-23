@@ -28,13 +28,13 @@
 				document.getElementById("rtmp_send").onclick = function() {
 					robot.sendData({
 						skillID: skillID,
-						data: "rtmp_send:" + document.getElementById('rtmp_url').value.trim()
+						data: "stream_send:" + document.getElementById('rtmp_url').value.trim()
 					})
 				}
 				document.getElementById("rtmp_stop").onclick = function() {
 					robot.sendData({
 						skillID: skillID,
-						data: "rtmp_stop"
+						data: "stream_stop"
 					})
 				}
 			}});

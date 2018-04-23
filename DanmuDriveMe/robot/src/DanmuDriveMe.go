@@ -30,6 +30,7 @@ func (d *DanmuDriveMe) OnStart() {
 func (d *DanmuDriveMe) OnClose() {
 	log.Debug.Println("OnClose")
 	hexabody.Close()
+	stream_control(false)
 }
 
 func (d *DanmuDriveMe) OnConnect() {
@@ -57,12 +58,12 @@ func (d *DanmuDriveMe) OnRecvString(data string) {
 		if len(data) > len("connect") && data[:len("connect")] == "connect" {
 			d.connect(data)
 		}
-		if len(data) > len("rtmp_send") && data[:len("rtmp_send")] == "rtmp_send" {
-			rtmp_send(data[len("rtmp_send")+1:])
+		if len(data) > len("stream_send") && data[:len("stream_send")] == "stream_send" {
+			stream_start(data[len("stream_send")+1:])
 		}
 	case "finish":
 		working = false
-	case "rtmp_stop":
-		rtmp_working = false
+	case "stream_stop":
+		stream_control(false)
 	}
 }
