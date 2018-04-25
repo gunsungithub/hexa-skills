@@ -4,14 +4,15 @@ package DanmuDriveMe
 #cgo LDFLAGS:-L../deps/lib -lavutil -lavformat -lswscale -lswresample -lavcodec -lm
 #cgo CFLAGS:-I../deps/include -DBUILD_CGO
 #include <stdlib.h>
+#include <string.h>
 #include <ffmpeg.h>
 extern int status[10];
 */
 import "C"
 import (
 	"mind/core/framework/log"
-	"math"
-	"reflect"
+	"mind/core/framework/drivers/media"
+	"mind/core/framework/drivers/audio"
 	"unsafe"
 	"sync"
 	"time"
@@ -39,63 +40,25 @@ var tincr2 float64 = 2 * 3.141592653 * 110.0 / 44100 / 44100
 
 //export fill_image_bytes_GO
 func fill_image_bytes_GO(Y, Cb, Cr unsafe.Pointer, width, height int) {
-	var x, y int
-	var i int
-	i = frame_index
-	frame_index++
-	dataY := &c_slice_t{Y, width * height}
-	sY := &Slice{data: dataY}
-	hY := (*reflect.SliceHeader)((unsafe.Pointer(&sY.Data)))
-	hY.Cap = dataY.n
-	hY.Len = dataY.n
-	hY.Data = uintptr(Y)
-	/* Y */
-	for y = 0; y < height; y++ {
-		for x = 0; x < width; x++ {
-			sY.Data[y*width+x] = (byte)(x + y + i*3)
-		}
+	image := media.SnapshotYCbCr()
+	if (width != image.Rect.Max.X || height != image.Rect.Max.Y || image.SubsampleRatio != 2) {
+		log.Error.Println(image.Rect, image.SubsampleRatio)
+		return
 	}
-	dataCb := &c_slice_t{Cb, width * height / 4}
-	sCb := &Slice{data: dataCb}
-	hCb := (*reflect.SliceHeader)((unsafe.Pointer(&sCb.Data)))
-	hCb.Cap = dataCb.n
-	hCb.Len = dataCb.n
-	hCb.Data = uintptr(Cb)
-
-	dataCr := &c_slice_t{Cr, width * height / 4}
-	sCr := &Slice{data: dataCb}
-	hCr := (*reflect.SliceHeader)((unsafe.Pointer(&sCr.Data)))
-	hCr.Cap = dataCr.n
-	hCr.Len = dataCr.n
-	hCr.Data = uintptr(Cr)
-	/* Cb and Cr */
-	for y = 0; y < height/2; y++ {
-		for x = 0; x < width/2; x++ {
-			sCb.Data[y*(width>>1)+x] = (byte)(128 + y + i*2)
-			sCr.Data[y*(width>>1)+x] = (byte)(64 + x + i*5)
-		}
-	}
+	C.memcpy(Y, unsafe.Pointer(&image.Y[0]),C.size_t(len(image.Y)))
+	C.memcpy(Cb, unsafe.Pointer(&image.Cb[0]),C.size_t(len(image.Cb)))
+	C.memcpy(Cr, unsafe.Pointer(&image.Cr[0]),C.size_t(len(image.Cr)))
 }
 
 //export fill_audio_bytes_GO
 func fill_audio_bytes_GO(buf unsafe.Pointer, nb_samples, channels int) {
-	var j, i int
-	var v uint16
-	data := &c_slice_t{buf, nb_samples * channels * 2}
-	s := &Slice16{data: data}
-	h := (*reflect.SliceHeader)((unsafe.Pointer(&s.Data)))
-	h.Cap = data.n
-	h.Len = data.n
-	h.Data = uintptr(buf)
-
-	for j = 0; j < nb_samples; j++ {
-		v = (uint16)(math.Sin(t) * 10000)
-		for i = 0; i < channels; i++ {
-			s.Data[j*channels+i] = v
-		}
-		t += tincr
-		tincr += tincr2
+	readBuf, err := audio.Read()
+	log.Debug.Println(len(readBuf), nb_samples*channels)
+	if err != nil || len(readBuf) != nb_samples * channels {
+		log.Error.Println("Audio read error:", err)
+		return
 	}
+	C.memcpy(buf, unsafe.Pointer(&readBuf[0]),C.size_t(len(readBuf)))
 }
 
 func stream_start(url string) {
@@ -137,4 +100,10 @@ func stream_control(run bool) bool {
 	}
 	log.Debug.Println("stream_control", run)
 	return true
+}
+
+//export CLog
+func CLog(msg *C.char) {
+	
+	log.Debug.Println(C.GoString(msg))
 }

@@ -15,7 +15,11 @@
 #define STREAM_FRAME_RATE 25 // 25 images/s
 #define STREAM_PIX_FMT    AV_PIX_FMT_YUV420P // default pix_fmt
 #define SCALE_FLAGS SWS_BICUBIC
-
+#ifdef printf
+#undef printf
+#endif
+static char msg[256];
+#define printf(fmt, args...) do {snprintf(msg, 256, fmt, ##args);CLog(msg);}while(0)
 // a wrapper around a single output AVStream
 typedef struct OutputStream {
     AVStream *st;
@@ -34,10 +38,16 @@ typedef struct OutputStream {
 extern int is_stream_stop();
 extern void fill_image_bytes_GO(void *Y, void *Cb, void *Cr, int width, int height);
 extern void fill_audio_bytes_GO(void *buf, int nb_samples, int channels);
+extern void CLog(char *msg);
 
 static void fill_image_bytes_C(uint8_t *Y, uint8_t *Cb, uint8_t *Cr, int width, int height);
 static void fill_audio_bytes_C(int16_t *buf, int nb_samples, int channels);
 static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AVStream *st, AVPacket *pkt);
+
+static void custom_output(void* ptr, int level, const char* fmt,va_list vl){
+    vsnprintf(msg, 256, fmt, vl);
+    CLog(msg);
+}
 
 static void log_packet(const AVFormatContext *fmt_ctx, const AVPacket *pkt)
 {
@@ -54,8 +64,8 @@ static void encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
 {
     int ret;
     // send the frame to the encoder
-    if (frame)
-        printf("Send frame %3"PRId64"\n", frame->pts);
+    //if (frame)
+    //    printf("Send frame %3"PRId64"\n", frame->pts);
     ret = avcodec_send_frame(enc_ctx, frame);
     if (ret < 0) {
         fprintf(stderr, "Error sending a frame for encoding\n");
@@ -69,7 +79,7 @@ static void encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
             fprintf(stderr, "Error during encoding\n");
             exit(1);
         }
-        printf("Write packet %3"PRId64" (size=%5d)\n", pkt->pts, pkt->size);
+        //printf("Write packet %3"PRId64" (size=%5d)\n", pkt->pts, pkt->size);
 		ret = write_frame(oc, &enc_ctx->time_base, ost->st, pkt);
         if (ret < 0) {
             fprintf(stderr, "Error while writing audio frame: %s\n",
@@ -87,7 +97,7 @@ static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AV
     av_packet_rescale_ts(pkt, *time_base, st->time_base);
     pkt->stream_index = st->index;
     // Write the compressed frame to the media file.
-    log_packet(fmt_ctx, pkt);
+    //log_packet(fmt_ctx, pkt);
     return av_interleaved_write_frame(fmt_ctx, pkt);
 }
 
@@ -492,7 +502,7 @@ int setup(char *argv)
     int64_t time_start, time_now;
 
     filename = argv;
-
+    av_log_set_callback(custom_output);
     avformat_network_init();
     // allocate the output media context
     avformat_alloc_output_context2(&oc, NULL, "flv", filename);
