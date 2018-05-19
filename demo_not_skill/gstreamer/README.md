@@ -1,0 +1,1 @@
+Gstreamer example according to [helloworld](https://gstreamer.freedesktop.org/documentation/application-development/basics/helloworld.html)
