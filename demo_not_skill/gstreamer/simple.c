@@ -36,12 +36,11 @@ int main (int argc,char *argv[])
 {
     GMainLoop *loop;
 
-    GstElement *pipeline, *videosrc, *videoenc, *videoconvert, *muxer, *sink;
+    GstElement *pipeline, *videosrc, *text, *videoenc, *videoconvert, *muxer, *sink;
     GstBus *bus;
     guint bus_watch_id;
-    GstCaps *caps;
 
-    if (argc != 2) {
+    if (argc < 2) {
         g_printerr ("Usage: %s <rtmp url>\n", argv[0]);
         return -1;
     }
@@ -53,12 +52,13 @@ int main (int argc,char *argv[])
     /* Create gstreamer elements */
     pipeline = gst_pipeline_new ("media-player");
     videosrc = gst_element_factory_make ("v4l2src",         "video-camrta-source");
+    text     = gst_element_factory_make ("textoverlay",         "text");
     videoenc = gst_element_factory_make ("imxvpuenc_h264",  "video-h264-byte-stream");
     videoconvert = gst_element_factory_make ("h264parse",       "video-convert");
     muxer    = gst_element_factory_make ("flvmux",          "flv-muxer");
     sink     = gst_element_factory_make ("rtmpsink",      "sink");
 
-    if (!pipeline || !videosrc || !videoenc || !videoconvert || !muxer || !sink) {
+    if (!pipeline || !videosrc || !text || !videoenc || !videoconvert || !muxer || !sink) {
         g_printerr ("One element could not be created. Exiting.\n");
         return -1;
     }
@@ -66,29 +66,27 @@ int main (int argc,char *argv[])
     /* Set up the pipeline */
     /* we set the input filename to the source element */
     g_object_set (G_OBJECT (sink), "location", argv[1], NULL);
-
+    g_object_set (G_OBJECT (text), "text", argv[1], NULL);
     /* we add a message handler */
     bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline));
     bus_watch_id = gst_bus_add_watch (bus, bus_call, loop);
     gst_object_unref (bus);
 
     /* we add all elements into the pipeline */
-    gst_bin_add_many (GST_BIN (pipeline), videosrc, videoenc, videoconvert, muxer, sink, NULL);
+    gst_bin_add_many (GST_BIN (pipeline), videosrc, text, videoenc, videoconvert, muxer, sink, NULL);
     /* we link the elements together */
-    /* file-source -> ogg-demuxer ~> vorbis-decoder -> converter -> alsa-output */
-    caps = gst_caps_new_simple ("video/x-raw",
-        "format", G_TYPE_STRING, "I420",
-        "width", G_TYPE_INT, 320,
-        "height", G_TYPE_INT, 200,
-        "framerate", GST_TYPE_FRACTION, 24, 1,
-        NULL);
-    if (gst_element_link_filtered (videosrc, videoenc, caps)){
+    if (gst_element_link (videosrc, text)){
+        g_print ("link success %d\n", __LINE__);
+    }
+    else{
+        return -1;
+    }       
+    if (gst_element_link (text, videoenc)){
         g_print ("link success %d\n", __LINE__);
     }
     else{
         return -1;
     }
-    gst_caps_unref (caps);
     if (gst_element_link (videoenc, videoconvert)){
         g_print ("link success %d\n", __LINE__);
     }
