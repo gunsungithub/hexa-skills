@@ -2,9 +2,9 @@ package DanmuDriveMe
 
 import (
 	"mind/core/framework"
+	"mind/core/framework/drivers/audio"
 	"mind/core/framework/drivers/hexabody"
 	"mind/core/framework/drivers/media"
-	"mind/core/framework/drivers/audio"
 	"mind/core/framework/log"
 	"mind/core/framework/skill"
 	"os"
@@ -32,7 +32,7 @@ func (d *DanmuDriveMe) OnStart() {
 func (d *DanmuDriveMe) OnClose() {
 	log.Debug.Println("OnClose")
 	hexabody.Close()
-	stream_control(false)
+	streamStop()
 }
 
 func (d *DanmuDriveMe) OnConnect() {
@@ -77,11 +77,11 @@ func (d *DanmuDriveMe) OnRecvString(data string) {
 			d.connect(data)
 		}
 		if len(data) > len("stream_send") && data[:len("stream_send")] == "stream_send" {
-			stream_start(data[len("stream_send")+1:])
+			streamStart(data[len("stream_send")+1:])
 		}
 	case "finish":
 		working = false
 	case "stream_stop":
-		stream_control(false)
+		streamStop()
 	}
 }
