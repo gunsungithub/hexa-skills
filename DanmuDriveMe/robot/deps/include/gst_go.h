@@ -1,15 +1,4 @@
-void start(char *url);
-void stop(void);
-void setText(char *text);
-
-void start(char *url){
-
-}
-
-void stop(void){
-
-}
-
-void setText(char *text){
-
-}
+int open_client(void);
+void close_client(void);
+int start_client(char *url);
+int stop_client(void);

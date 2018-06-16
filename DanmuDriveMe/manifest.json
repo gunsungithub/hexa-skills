@@ -2,8 +2,8 @@
     "name": "DanmuDriveMe",
     "skillID": "DanmuDriveMe",
     "version": "1.0.0",
-	"devicesPermission": [
-    "video",
-    "audio"
+    "devicesPermission": [
+        "video",
+        "audio"
 	]
 }
