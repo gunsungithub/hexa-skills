@@ -1,0 +1,58 @@
+#!/bin/bash
+#
+# capsuled    A test service program
+#
+# chkconfig: - 92 12
+# description: A test service prog
+#
+# @name: simple_server
+# @author: leon
+# @created: 2018.10.07
+#
+
+
+
+PROG=simple_serverd
+RETVAL=0
+FULL_PATH=/usr/local/sbin/simple_server
+
+start()
+{
+        echo -n $"Starting $PROG ..."
+        start-stop-daemon --start --background --exec $FULL_PATH -- --daemon
+        RETVAL=$?
+        echo
+}
+
+stop()
+{
+        echo -n $"Stopping $PROG ..."
+        start-stop-daemon --stop --exec $FULL_PATH
+        RETVAL=$?
+        echo
+}
+
+case "$1" in
+        start)
+                start
+                ;;
+        stop)
+                stop
+                ;;
+        restart)
+                stop
+                sleep 5
+                start
+                RETVAL=$?
+                ;;
+        status)
+                status $FULL_PATH
+                RETVAL=$?
+                ;;
+        *)
+                echo $“Usage: $0 {start|stop|restart|status}”
+                exit 1
+
+esac
+
+exit $RETVAL

@@ -3,8 +3,6 @@ package DanmuDriveMe
 import (
 	"mind/core/framework"
 	"mind/core/framework/drivers/hexabody"
-	"mind/core/framework/drivers/media"
-	"mind/core/framework/drivers/audio"
 	"mind/core/framework/log"
 	"mind/core/framework/skill"
 	"os"
@@ -37,22 +35,6 @@ func (d *DanmuDriveMe) OnClose() {
 
 func (d *DanmuDriveMe) OnConnect() {
 	log.Debug.Println("OnConnect")
-	if !media.Available() {
-		log.Error.Println("Media driver not available")
-		return
-	}
-	if err := media.Start(); err != nil {
-		log.Error.Println("Media driver could not start")
-	}
-	if !audio.Available() {
-		log.Error.Println("Audio driver not available")
-		return
-	}
-	if err := audio.Start(); err != nil {
-		log.Error.Println("Audio driver could not start")
-		return
-	}
-	audio.Init(1, 44100, audio.FormatS16LE)
 }
 
 func (d *DanmuDriveMe) OnDisconnect() {
@@ -60,7 +42,6 @@ func (d *DanmuDriveMe) OnDisconnect() {
 	if conn != nil {
 		conn.Close()
 	}
-	audio.Close()
 	os.Exit(0)
 }
 
