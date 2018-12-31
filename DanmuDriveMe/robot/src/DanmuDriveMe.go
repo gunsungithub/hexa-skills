@@ -25,12 +25,13 @@ func (d *DanmuDriveMe) OnStart() {
 	if err != nil {
 		log.Error.Println("hexabody can't start:", err)
 	}
+	hexabody.Stand()
 }
 
 func (d *DanmuDriveMe) OnClose() {
 	log.Debug.Println("OnClose")
 	hexabody.Close()
-	streamStop()
+	stream_control(false)
 }
 
 func (d *DanmuDriveMe) OnConnect() {
@@ -58,11 +59,11 @@ func (d *DanmuDriveMe) OnRecvString(data string) {
 			d.connect(data)
 		}
 		if len(data) > len("stream_send") && data[:len("stream_send")] == "stream_send" {
-			streamStart(data[len("stream_send")+1:])
+			stream_start(data[len("stream_send")+1:])
 		}
 	case "finish":
 		working = false
 	case "stream_stop":
-		streamStop()
+		stream_control(false)
 	}
 }

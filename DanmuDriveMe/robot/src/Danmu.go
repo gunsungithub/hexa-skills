@@ -3,39 +3,35 @@ package DanmuDriveMe
 import (
 	//"mind/core/framework"
 	//"mind/core/framework/skill"
-	"mind/core/framework/log"
-	"mind/core/framework/drivers/hexabody"
-	"net"
-	"net/http"
 	"errors"
 	"io/ioutil"
-	"regexp"
-	"math"
 	"math/rand"
-	"time"
+	"mind/core/framework/drivers/hexabody"
+	"mind/core/framework/log"
+	"net"
+	"net/http"
+	"regexp"
 	"strconv"
-	//"os"
 	"strings"
-)
-const (
-	FAST_DURATION = 80
-	SLOW_DURATION = 500
-	dmServerLabel = "dm_server"
-	dmPortLabel = "dm_port"
-	protocolHeaderSize = 16
-	protocolBodyViewersSize = 4
-	sendBufferSize = 80
-	receiveBufferSize = 256
-	magic = 16
-	protocolVer = 1
+	"time"
 )
 
+const (
+	dmServerLabel           = "dm_server"
+	dmPortLabel             = "dm_port"
+	protocolHeaderSize      = 16
+	protocolBodyViewersSize = 4
+	sendBufferSize          = 80
+	receiveBufferSize       = 256
+	magic                   = 16
+	protocolVer             = 1
+)
 
 var conn *net.TCPConn
 var working bool = true
 
-func (d *DanmuDriveMe)connect(_data string) {
-	roomid := _data[len("connect"):]
+func (d *DanmuDriveMe) connect(_data string) {
+	roomid := _data[len("connect:"):]
 	dmAddr, err := getDmAddr(roomid)
 	if err != nil {
 		log.Debug.Println(err)
@@ -63,11 +59,6 @@ func (d *DanmuDriveMe)connect(_data string) {
 
 	// receive
 	go d.receiveLoop()
-}
-func moveLegs(v float64) {
-	go hexabody.MoveJoint(0, 1, 45*math.Sin(v*math.Pi/180)+70, FAST_DURATION)
-	go hexabody.MoveJoint(0, 0, 35*math.Cos(v*math.Pi/180)+60, FAST_DURATION)
-	hexabody.MoveJoint(1, 1, 45*math.Cos(v*math.Pi/180)+70, FAST_DURATION)
 }
 
 func heartBeat(delay time.Duration) {
@@ -97,7 +88,7 @@ func heartBeat(delay time.Duration) {
 	//waitgroup.Done()
 }
 
-func (d *DanmuDriveMe)receiveLoop() {
+func (d *DanmuDriveMe) receiveLoop() {
 	//waitgroup.Add(1)
 	tmpBuffer := make([]byte, 0)
 
@@ -116,8 +107,8 @@ func (d *DanmuDriveMe)receiveLoop() {
 		if n > 0 {
 			var needMore bool
 			tmpBuffer, needMore = Unpack(append(tmpBuffer, buffer[:n]...), playerCmdChannel)
-			for !needMore {
-				tmpBuffer, needMore = Unpack(tmpBuffer, playerCmdChannel)
+			if needMore {
+				continue
 			}
 		} else {
 			time.Sleep(time.Millisecond * 100)
@@ -125,49 +116,6 @@ func (d *DanmuDriveMe)receiveLoop() {
 	}
 	log.Debug.Println("receive exit.")
 	//waitgroup.Done()
-}
-
-func (d *DanmuDriveMe) play() {
-	ready()
-	v := 0.0
-	for {
-		select {
-		case <-d.stop:
-			return
-		default:
-			moveLegs(v)
-			v += 10
-		}
-	}
-}
-
-func ready() {
-	hexabody.Stand()
-	hexabody.MoveHead(0.0, FAST_DURATION)
-	// Using goroutines to make some commands be executed at the same time
-	legPosition2 := hexabody.NewLegPosition().SetCoordinates(-100, 50.0, 70.0)
-	// legPositionInfo() is used to check, adjust or return the legposition's infomation and it's not necessary.
-	legPositionInfo(legPosition2)
-	// Moveleg
-	go hexabody.MoveLeg(2, legPosition2, SLOW_DURATION)
-	hexabody.MoveLeg(5, hexabody.NewLegPosition().SetCoordinates(100, 50.0, 70.0), SLOW_DURATION)
-	go hexabody.MoveJoint(0, 1, 90, SLOW_DURATION)
-	hexabody.MoveJoint(0, 2, 45, SLOW_DURATION)
-	go hexabody.MoveJoint(1, 1, 90, FAST_DURATION)
-	hexabody.MoveJoint(1, 2, 45, FAST_DURATION)
-}
-
-func legPositionInfo(legPosition *hexabody.LegPosition) {
-	if !legPosition.IsValid() {
-		log.Info.Println("The position is not valid, means it's unreachale, fit it.")
-		legPosition.Fit()
-	}
-	x, y, z, err := legPosition.Coordinates()
-	if err != nil {
-		log.Info.Println("Get coordinates of legposition error:", err)
-	} else {
-		log.Info.Println("The coordinates of legposition are:", x, y, z)
-	}
 }
 
 func Unpack(buffer []byte, readerChannel chan []byte) ([]byte, bool) {
@@ -331,13 +279,32 @@ func (d *DanmuDriveMe) parserPlayerCmd(readerChannel chan []byte) {
 				danmu := regDanmu.FindString(s)
 				length = len(danmu)
 				if length > len(`],"",[`) {
-					danmu = strings.TrimSpace(danmu[3:length-3])
-					log.Debug.Println("danmu=", danmu[3:length-3])
-					if danmu == "start" {
-						go d.play()
-					} else if danmu == "stop" {
-						d.stop <- true
-						hexabody.RelaxLegs()
+					danmu = strings.TrimSpace(danmu[3 : length-3])
+					log.Debug.Println(danmu)
+					if danmu == "a" {
+						hexabody.MoveHead(hexabody.Direction()+45, 10)
+					} else if danmu == "d" {
+						hexabody.MoveHead(hexabody.Direction()-45, 10)
+					} else if danmu == "w" {
+						hexabody.Walk(hexabody.Direction(), 50)
+					} else if danmu == "s" {
+						du := hexabody.Direction() + 180
+						if du > 360 {
+							du -= 360
+						}
+						hexabody.Walk(du, 50)
+					} else if danmu == "l" {
+						du := hexabody.Direction() + 90
+						if du > 360 {
+							du -= 360
+						}
+						hexabody.Walk(du, 50)
+					} else if danmu == "r" {
+						du := hexabody.Direction() + 270
+						if du > 360 {
+							du -= 360
+						}
+						hexabody.Walk(hexabody.Direction(), 50)
 					}
 				}
 			case "SYS_GIFT":
